@@ -74,7 +74,6 @@ All methods share one framework, architecture, and data pipeline to avoid infras
 .
 ├── README.md                       # this file
 ├── PAPER.md                        # the English paper (authoritative findings & numbers)
-├── ANALYSIS_sl.md                  # Slovenian working analysis (companion, all result tables)
 ├── LICENSE                         # MIT
 ├── requirements.txt
 ├── .gitignore
