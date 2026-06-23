@@ -1,0 +1,1 @@
+These are raw development fragments kept for provenance. They are the scratch scripts, notebook, and working drafts used while building the study; they are not part of the clean, runnable experiments (see `../experiments/`).
