@@ -12,13 +12,13 @@ def code(src):
                   "outputs": [], "source": src.strip("\n").splitlines(keepends=True)})
 
 # ----------------------------------------------------------------------
-md(r"""# Bipropagation vs Backpropagation — pošten test treh trditev
+md(r"""# Bipropagation vs Backpropagation, pošten test treh trditev
 
 **Avtor metode:** dr. Bojan Ploj. **Okvir:** TensorFlow 2 / Keras. **Cilj:** Google Colab (GPU).
 
 Bipropagacija (greedy, plast-po-plast, nadzorovano učenje z eksplicitnimi vmesnimi cilji in
 identiteti-blizu / deterministično inicializacijo) ima tri ločljive trditve. Vsako testiramo
-**izolirano in pošteno** — vsaka številka pride iz dejanske evalvacije (originalni demo jih ni računal):
+**izolirano in pošteno**, vsaka številka pride iz dejanske evalvacije (originalni demo jih ni računal):
 
 | # | Trditev | Strukturni razlog za (ne)zmago | Test |
 |---|---------|-------------------------------|------|
@@ -36,7 +36,7 @@ identiteti-blizu / deterministično inicializacijo) ima tri ločljive trditve. V
 
 # ----------------------------------------------------------------------
 md(r"""## 0. Setup
-`FAST_MODE = True` požene hiter smoke-test (podmnožica MNIST, malo epoh/seedov) — za preverbo da vse teče.
+`FAST_MODE = True` požene hiter smoke-test (podmnožica MNIST, malo epoh/seedov), za preverbo da vse teče.
 Za pravi benchmark na GPU nastavi `FAST_MODE = False`.""")
 
 code(r"""
@@ -63,7 +63,7 @@ def set_seed(s):
 """)
 
 # ----------------------------------------------------------------------
-md(r"""## 1. Podatki — MNIST (in 2D igrača za intuicijo)""")
+md(r"""## 1. Podatki, MNIST (in 2D igrača za intuicijo)""")
 
 code(r"""
 (x_tr, y_tr), (x_te, y_te) = tf.keras.datasets.mnist.load_data()
@@ -123,7 +123,7 @@ def train_backprop(depth, kind, seed, epochs=None):
 """)
 
 # ----------------------------------------------------------------------
-md(r"""### 2b. Bipropagation — plastna (deep), zvesta rekonstrukcija
+md(r"""### 2b. Bipropagation, plastna (deep), zvesta rekonstrukcija
 Vsako plast naučimo posebej (prejšnje zamrznjene), da preslika svoj vhod proti **per-razred sidru**
 v skritem prostoru (one-hot v prvih K dimenzijah). Skrite plasti so kvadratne, init = **identiteta + šum**,
 tako da vsaka naredi le majhen residualni premik. Na koncu plitek softmax readout. To **obide globalni
@@ -192,7 +192,7 @@ def _eval_layerwise(frozen, readout, A):
 """)
 
 # ----------------------------------------------------------------------
-md(r"""### 2c. Deterministic Bipropagation — zvesta reprodukcija novega repozitorija
+md(r"""### 2c. Deterministic Bipropagation, zvesta reprodukcija novega repozitorija
 Analitična konstrukcija ene skrite plasti iz geometrije centroidov (±1 uteži nad 3 najbolj
 diskriminativnimi značilkami na nevron), cilji = `0.99*izhod + 0.01*two_hot`, refine z Adam.
 **Accuracy izračunamo zares** (njihov demo je vračal hardcoded 100%).""")
@@ -246,7 +246,7 @@ def train_deterministic_bipropagation(seed=0, m=2, refine_epochs=None):
 """)
 
 # ----------------------------------------------------------------------
-md(r"""## TEST — Trditev 1: hitrost konvergence (accuracy vs čas)
+md(r"""## TEST, Trditev 1: hitrost konvergence (accuracy vs čas)
 Globina = 6. Gledamo, kdo prej doseže visoko natančnost. Pričakovano: deterministična/plastna
 metoda starta visoko, vanilla backprop pleza počasi.""")
 
@@ -272,7 +272,7 @@ print({k:round(v['train_time'],2) for k,v in
 """)
 
 # ----------------------------------------------------------------------
-md(r"""## TEST — Trditev 2: zanesljivost (varianca čez seede)
+md(r"""## TEST, Trditev 2: zanesljivost (varianca čez seede)
 Deterministična init bi morala imeti skoraj nično varianco. Backprop niha.""")
 
 code(r"""
@@ -290,7 +290,7 @@ for k,v in acc_by.items(): print(f"{k:14s} mean={np.mean(v):.4f}  std={np.std(v)
 """)
 
 # ----------------------------------------------------------------------
-md(r"""## TEST — Trditev 3: skaliranje z globino
+md(r"""## TEST, Trditev 3: skaliranje z globino
 Vanilla backprop s tanh + naivno init naj bi z globino propadal; plastna bipropagacija ne.""")
 
 code(r"""

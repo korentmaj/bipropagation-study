@@ -1,5 +1,5 @@
 # =============================================================================
-# MNIST / MLP experiment — bipropagation reproduction & decomposition study.
+# MNIST / MLP experiment, bipropagation reproduction & decomposition study.
 #
 # Self-contained TensorFlow 2 / Keras script. Runs in a single Colab cell or
 # locally. It implements and compares, on a shared deep narrow MLP and a shared
@@ -27,7 +27,7 @@
 
 
 # ======================================================================
-# Bipropagation vs Backpropagation — pošten test treh trditev
+# Bipropagation vs Backpropagation, pošten test treh trditev
 # ======================================================================
 
 # ======================================================================
@@ -56,7 +56,7 @@ def set_seed(s):
 
 
 # ======================================================================
-# 1. Podatki — MNIST (in 2D igrača za intuicijo)
+# 1. Podatki, MNIST (in 2D igrača za intuicijo)
 # ======================================================================
 (x_tr, y_tr), (x_te, y_te) = tf.keras.datasets.mnist.load_data()
 x_tr = (x_tr.reshape(-1,784).astype('float32'))/255.0
@@ -108,7 +108,7 @@ def train_backprop(depth, kind, seed, epochs=None):
 
 
 # ======================================================================
-# 2b. Bipropagation — plastna (deep), zvesta rekonstrukcija
+# 2b. Bipropagation, plastna (deep), zvesta rekonstrukcija
 # ======================================================================
 def class_anchors(width, seed=0):
     # sidra: e_y v prvih K dimenzijah skritega prostora (preprosto, interpretabilno)
@@ -172,7 +172,7 @@ def _eval_layerwise(frozen, readout, A):
 
 
 # ======================================================================
-# 2c. Deterministic Bipropagation — zvesta reprodukcija novega repozitorija
+# 2c. Deterministic Bipropagation, zvesta reprodukcija novega repozitorija
 # ======================================================================
 def _construct_layer(Xn, y, m=2):
     Kk=len(np.unique(y)); Mm=Xn.shape[1]; num=m*Kk
@@ -222,7 +222,7 @@ def train_deterministic_bipropagation(seed=0, m=2, refine_epochs=None):
 
 
 # ======================================================================
-# TEST — Trditev 1: hitrost konvergence (accuracy vs čas)
+# TEST, Trditev 1: hitrost konvergence (accuracy vs čas)
 # ======================================================================
 DEPTH=6
 r_van = train_backprop(DEPTH,'vanilla',seed=0)
@@ -245,7 +245,7 @@ print({k:round(v['train_time'],2) for k,v in
 
 
 # ======================================================================
-# TEST — Trditev 2: zanesljivost (varianca čez seede)
+# TEST, Trditev 2: zanesljivost (varianca čez seede)
 # ======================================================================
 acc_by={'vanilla':[],'modern':[],'biprop':[],'deterministic':[]}
 for s in CFG['seeds']:
@@ -261,7 +261,7 @@ for k,v in acc_by.items(): print(f"{k:14s} mean={np.mean(v):.4f}  std={np.std(v)
 
 
 # ======================================================================
-# TEST — Trditev 3: skaliranje z globino
+# TEST, Trditev 3: skaliranje z globino
 # ======================================================================
 DEPTHS=[2,4,8,16] if not FAST_MODE else [2,4,8]
 res={'vanilla':[],'modern':[],'biprop':[]}
