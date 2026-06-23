@@ -156,7 +156,7 @@ XOR / two-spirals (toy, kjer je design najčistejši) → Iris → MNIST / Fashi
 - **NE** ponovi fabriciranja iz §3 — vsaka številka mora priti iz dejanske evalvacije.
 
 ### Prvi praktični korak
-Original (TF0.9/1.0) je danes nezagonljiv → **reimplementacija v PyTorch** kot enotno ogrodje za vseh 8 metod. Začni z XOR + two-spirals za sanity check, nato MNIST.
+Original (TF0.9/1.0) je danes nezagonljiv → **reimplementacija v TensorFlow 2 / Keras** kot enotno ogrodje za vseh 8 metod. Začni z XOR + two-spirals za sanity check, nato MNIST.
 
 ---
 

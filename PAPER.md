@@ -53,7 +53,7 @@ We are explicit that most of our findings are *confirmatory* of established lite
 
 ### 3.1 Methods compared
 
-All methods are implemented in a single PyTorch framework on a shared architecture and data pipeline, to avoid the confound of differing infrastructure.
+All methods are implemented in a single TensorFlow 2 / Keras framework on a shared architecture and data pipeline, to avoid the confound of differing infrastructure.
 
 1. **Vanilla backprop** — naive initialization, saturating (tanh) activation, plain SGD. The régime where vanishing gradients are expected to bite.
 2. **Modern backprop** — Adam + He initialization + BatchNorm. The strong baseline.
