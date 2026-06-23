@@ -152,10 +152,10 @@ Open an issue or a pull request.
 
 ```bibtex
 @misc{korent2026bipropagation,
-  author       = {Anna (Korent)},
+  author       = {Korent, Maj},
   title        = {Bipropagation: An Independent Reproduction and Decomposition Study},
   year         = {2026},
-  howpublished = {\url{https://github.com/<your-username>/bipropagation-study}},
+  howpublished = {\url{https://github.com/korentmaj/bipropagation-study}},
   note         = {Independent reproduction and decomposition of Bojan Ploj's bipropagation method.}
 }
 ```
