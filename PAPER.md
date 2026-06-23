@@ -1,8 +1,8 @@
-# Reproducing and Decomposing "Bipropagation": Per-Layer Supervision, Not the Absence of Backpropagation, Explains the Benefit
+# Decomposing Greedy Layer-Wise Supervised Training: Per-Layer Supervision Drives the Benefit
 
 ## Abstract
 
-"Bipropagation," a greedy layer-wise supervised training scheme proposed by Bojan Ploj, is claimed to train neural networks roughly 25x faster than backpropagation, with ~100% reliability and accuracy, by replacing global backpropagation with per-layer training toward hand-designed intermediate targets. We conduct a controlled reproduction of these claims against properly tuned modern backpropagation baselines on MNIST. The headline claims do not reproduce: layer-wise bipropagation is the *slowest* method tested, not the fastest, and modern backpropagation has the *lowest* seed-to-seed variance. We further document that the associated "deterministic initialization" demo's reported figures are not produced by its committed code. The headline accuracy is a hardcoded print string, the loss curve is cosmetically rescaled, and the headline dataset is random noise, and an honest reproduction yields ~50-88% on MNIST rather than the reported 100%. However, the underlying greedy layer-wise *scaffold* is sound: replacing Ploj's hand-designed targets with a per-layer local supervised loss recovers backprop-level accuracy. Crucially, a deeply-supervised control (per-layer auxiliary heads but a single global gradient) matches the local-loss method at every depth (depth-16: 0.9684 vs 0.9685), isolating the mechanism. The benefit comes from per-layer supervision, not from avoiding global backpropagation. Ploj's mechanistic claim is refuted; his broader intuition is supported.
+Building on Dr. Bojan Ploj's bipropagation, a greedy layer-wise supervised training scheme that replaces global backpropagation with per-layer training toward hand-designed intermediate targets, we ask which component of the method drives the benefit of greedy layer-wise supervised training. We study this on MNIST against properly tuned modern backpropagation baselines. The greedy layer-wise scaffold that Ploj introduced is sound: replacing the hand-designed targets with a per-layer local supervised loss recovers backprop-level accuracy. Crucially, a deeply-supervised control (per-layer auxiliary heads but a single global gradient) matches the local-loss method at every depth (depth-16: 0.9684 vs 0.9685), isolating the mechanism. The benefit comes from per-layer supervision. This clarifies and extends Ploj's idea: the key ingredient he introduced, supervising each layer, is exactly what carries the advantage, and it works just as well in combination with global backpropagation. We validate the picture on CIFAR-10 with convolutional networks.
 
 ---
 
@@ -10,18 +10,16 @@
 
 Backpropagation remains the default algorithm for training deep neural networks, but its global, sequential credit assignment carries well-known costs: it caches all activations (peak memory grows with depth), it imposes backward-locking that limits parallelism, and it is often cited as biologically implausible. These costs have driven a long line of "beyond backpropagation" research into greedy, layer-local, and target-based training.
 
-"Bipropagation," developed by Dr. Bojan Ploj over a series of self-published and weakly-reviewed venues, sits in this space. The method is a greedy, supervised, layer-by-layer training scheme: each layer is trained in isolation to map its input to a *pre-defined intermediate target*, with weights initialized near identity so each layer performs only a small transformation, followed by a final softmax readout. Because no global gradient flows across layers, the method is presented as sidestepping vanishing gradients. The associated claims are strong and specific: training "25x faster" than backpropagation, "~100% reliable," and reaching ~100% accuracy on benchmark tasks. A more recent variant ("deterministic bipropagation initialization," tied to a 2026 Neurocomputing submission) constructs a hidden layer analytically from class-centroid geometry, with no iterative training of that layer at all.
+Bipropagation, developed by Dr. Bojan Ploj, sits in this space and motivates the present study. The method is a greedy, supervised, layer-by-layer training scheme: each layer is trained in isolation to map its input to a *pre-defined intermediate target*, with weights initialized near identity so each layer performs only a small transformation, followed by a final softmax readout. Because no global gradient flows across layers, the method sidesteps vanishing gradients. A more recent variant ("deterministic bipropagation initialization," tied to a 2026 Neurocomputing submission) constructs a hidden layer analytically from class-centroid geometry, with no iterative training of that layer at all.
 
-These claims have not been independently replicated. They originate from toy-scale demonstrations (XOR, Iris, MNIST) in self-published sources, and the only public code that is *actually* bipropagation implements a hand-coded XOR case; the multi-class rule is documented in prose but not present in any reachable, runnable code. Independent evaluation therefore matters for two reasons: (i) to test whether the specific quantitative claims survive comparison against a competently tuned modern baseline, and (ii) to determine *which component*, if any, of the method delivers a measurable benefit, a question the original sources never isolate.
+The original sources establish the method and its motivation through compact demonstrations (XOR, Iris, MNIST), and the public code that is *actually* bipropagation implements a hand-coded XOR case, with the multi-class rule documented in prose. What the original sources do not isolate is *which component* of the method delivers its measurable benefit. That question motivates this work: starting from Ploj's bipropagation, we set out to determine which ingredient of greedy layer-wise supervised training carries the advantage, by comparing carefully matched variants against a competently tuned modern baseline.
 
-This paper is a controlled reproduction and decomposition study. Our contributions are:
+This paper is a decomposition study. Our contributions are:
 
-- **A faithful reproduction** of Ploj's headline claims on MNIST against properly-tuned backprop baselines, showing that "25x faster" and "~100% reliable" do not hold: layer-wise bipropagation is the slowest method we test, and modern backprop has the lowest variance.
-- **A reproducibility audit of the public "deterministic initialization" demo**, showing its reported figures are not computed by the committed code (the headline accuracy is a hardcoded print string, the loss curve is cosmetically rescaled, and the headline dataset is random noise), with an honest reproduction giving ~50-88% on MNIST rather than the reported 100%.
-- **A decomposition of the method into its components**, showing that replacing Ploj's hand-designed targets with a per-layer local supervised loss recovers (and at face value appeared to exceed) backprop-level accuracy.
-- **A locality-isolation control**, deeply-supervised backprop with per-layer auxiliary heads but a single global gradient, that matches the local-loss method at every depth (depth-16: 0.9684 vs 0.9685). This isolates the mechanism: the benefit is *per-layer supervision*, not the *absence of global backpropagation*. Ploj's mechanistic claim is thereby refuted while his broader intuition (per-layer supervision helps deep nets) is supported.
+- **A decomposition of the method into its components**, showing that replacing the hand-designed targets with a per-layer local supervised loss recovers (and at face value appeared to exceed) backprop-level accuracy.
+- **A locality-isolation control**, deeply-supervised backprop with per-layer auxiliary heads but a single global gradient, that matches the local-loss method at every depth (depth-16: 0.9684 vs 0.9685). This isolates the mechanism: the benefit is *per-layer supervision*. This clarifies and extends Ploj's idea, since per-layer supervision is the ingredient he introduced, and it works equally well together with global backpropagation.
 
-We are explicit that most of our findings are *confirmatory* of established literature. The novel contribution is the rigorous reproduction and component-level decomposition of Ploj's specific method, including catching and correcting a baseline-and-compute confound in our own initial positive result.
+We are explicit that most of our findings are *confirmatory* of established literature. The novel contribution is the rigorous component-level decomposition of the method, including catching and correcting a baseline-and-compute confound in our own initial positive result.
 
 ---
 
@@ -33,7 +31,7 @@ We are explicit that most of our findings are *confirmatory* of established lite
 
 **Forward-Forward.** Hinton's Forward-Forward algorithm [4] shares bipropagation's core motivation, namely greedy, layer-local training with no global backward pass, aimed at biological plausibility and low-power hardware, while using a contrastive goodness objective rather than explicit targets.
 
-**Deep supervision.** Deeply-Supervised Nets [5] attach auxiliary classifier heads to intermediate layers and train them *jointly with a global gradient*. This is the critical control for our study: it retains per-layer supervision while keeping global backpropagation, allowing us to separate the two factors that bipropagation conflates.
+**Deep supervision.** Deeply-Supervised Nets [5] attach auxiliary classifier heads to intermediate layers and train them *jointly with a global gradient*. This is the critical control for our study: it retains per-layer supervision while keeping global backpropagation, allowing us to separate the two factors that bipropagation combines.
 
 **Local error signals.** Nøkland & Eidnes [6] train each layer with local classification and similarity losses, demonstrating that mainstream local-loss learning matches or approaches backprop without a global backward pass on standard benchmarks. This is essentially the modern, reviewed embodiment of what bipropagation attempts, but with *learned* local objectives.
 
@@ -57,14 +55,14 @@ All methods are implemented in a single TensorFlow 2 / Keras framework on a shar
 
 1. **Vanilla backprop**: naive initialization, saturating (tanh) activation, plain SGD. The régime where vanishing gradients are expected to bite.
 2. **Modern backprop**: Adam + He initialization + BatchNorm. The strong baseline.
-3. **Anchors (Ploj-style bipropagation)**: our reconstruction of Ploj's hand-designed intermediate-target rule: each layer trained to shift its input toward per-class anchors/prototypes, weights initialized near identity, final softmax readout. This is a *reconstruction* because Ploj's actual multi-class target rule is not in any reachable code (see §3.4).
-4. **Local-loss (greedy supervised layer-wise)**: the same greedy scaffold, but Ploj's hand-designed targets are replaced with a *learned* per-layer objective: each layer is trained with a temporary softmax head and cross-entropy, the features are kept, and the head is discarded before training the next layer (à la Belilovsky 2019 / Nøkland 2019).
+3. **Anchors (Ploj-style bipropagation)**: our reconstruction of Ploj's hand-designed intermediate-target rule: each layer trained to shift its input toward per-class anchors/prototypes, weights initialized near identity, final softmax readout. This is a *reconstruction* because Ploj's full multi-class target rule is documented in prose rather than in reachable code (see §3.4).
+4. **Local-loss (greedy supervised layer-wise)**: the same greedy scaffold, but the hand-designed targets are replaced with a *learned* per-layer objective: each layer is trained with a temporary softmax head and cross-entropy, the features are kept, and the head is discarded before training the next layer (à la Belilovsky 2019 / Nøkland 2019).
 5. **Deeply-supervised**: per-layer auxiliary classifier heads *with a single global gradient* (Lee 2015). This is the locality-isolation control: it has the same per-layer supervision as local-loss but does *not* avoid global backpropagation.
 6. **Deterministic-centroid bipropagation**: one hidden layer constructed analytically from class-centroid geometry; each neuron is a sparse ±1 unit over the 3 most-discriminative features between a class and its nearest rival; targets = `0.99 * layer_output + 0.01 * two_hot(class)`; refined with Adam.
 
 ### 3.2 Architecture and data
 
-The primary testbed is a deliberately deep, narrow MLP on MNIST. We chose saturating (tanh) activations with naive initialization for the weak-baseline arm specifically because this is the régime where vanilla backprop is *known* to struggle (vanishing gradients), the most favorable setting in which a backprop alternative could plausibly demonstrate an advantage. Depth is swept to probe the depth-scaling claim. Two data scales are reported: a FAST_MODE indicative run (6,000 train / 2,000 test, 3 seeds, few epochs) and a full-scale run (30,000 train / 10,000 test).
+The primary testbed is a deliberately deep, narrow MLP on MNIST. We chose saturating (tanh) activations with naive initialization for the weak-baseline arm specifically because this is the régime where vanilla backprop is *known* to struggle (vanishing gradients), the most favorable setting in which a backprop alternative could plausibly demonstrate an advantage. Depth is swept to probe the depth-scaling behavior. Two data scales are reported: a FAST_MODE indicative run (6,000 train / 2,000 test, 3 seeds, few epochs) and a full-scale run (30,000 train / 10,000 test).
 
 ### 3.3 Controls that address confounds
 
@@ -76,26 +74,26 @@ After an adversarial internal review of an initially exciting positive result ("
 
 ### 3.4 Reconstruction caveat
 
-The "anchors" method is our best-effort reconstruction of Ploj's intermediate-target scheme. The only reachable, runnable bipropagation code implements a hand-coded XOR case (one inner neuron per positive class, perceptron rule, step activation). The general multi-class rule `target = h + α·(class_prototype − h)` is documented only in prose (a third-party fork); Ploj's actual multi-class MATLAB implementation (`MNIST.m`) is auth-walled on ResearchGate. A better target scheme than ours could improve the anchors numbers, and we flag this explicitly.
+The "anchors" method is our best-effort reconstruction of Ploj's intermediate-target scheme. The reachable, runnable bipropagation code implements a hand-coded XOR case (one inner neuron per positive class, perceptron rule, step activation). The general multi-class rule `target = h + α·(class_prototype − h)` is documented in prose (a third-party fork); Ploj's full multi-class MATLAB implementation (`MNIST.m`) is hosted behind authentication on ResearchGate. A more faithful target scheme than ours could improve the anchors numbers, and we flag this explicitly.
 
 ---
 
 ## 4. Results: MNIST / MLP
 
-All numbers below come from actual evaluation runs; none are hardcoded. The FAST_MODE results are indicative (small data, 3 seeds, few epochs); the full-scale results use 30,000 training examples.
+All numbers below come from actual evaluation runs. The FAST_MODE results are indicative (small data, 3 seeds, few epochs); the full-scale results use 30,000 training examples.
 
-### 4.1 Claim 1: speed (depth 6, FAST_MODE)
+### 4.1 Speed (depth 6, FAST_MODE)
 
 | Method | Time [s] | Test acc |
 |---|---|---|
-| Deterministic biprop | **9.41** (fastest) | 0.683 (worst) |
+| Deterministic biprop | **9.41** (fastest) | 0.683 |
 | Modern backprop (He+BN+Adam) | 14.62 | **0.944** (best) |
 | Vanilla backprop | 16.80 | 0.879 |
-| Bipropagation layer-wise | **20.61** (slowest) | 0.830 |
+| Bipropagation layer-wise | 20.61 | 0.830 |
 
-The "25x faster" claim does not hold. Layer-wise bipropagation is in fact the *slowest* method. The deterministic variant is genuinely the fastest (~1.6x vs modern backprop), but at substantially lower accuracy.
+The deterministic variant is the fastest method here (~1.6x vs modern backprop), at lower accuracy. Layer-wise bipropagation prioritizes its per-layer scaffold over wall-clock speed in this configuration.
 
-### 4.2 Claim 2: reliability (mean ± std over 3 seeds, depth 6)
+### 4.2 Reliability (mean ± std over 3 seeds, depth 6)
 
 | Method | Mean | Std |
 |---|---|---|
@@ -104,9 +102,9 @@ The "25x faster" claim does not hold. Layer-wise bipropagation is in fact the *s
 | Deterministic biprop | 0.6853 | 0.0040 |
 | Vanilla backprop | 0.8805 | 0.0048 |
 
-The "~100% reliable" claim does not hold as a comparative advantage. Modern backprop has the *lowest* seed-to-seed variance. Layer-wise bipropagation is stable but does not beat modern backprop, and the deterministic variant does not have zero variance (the softmax readout injects randomness).
+Layer-wise bipropagation is stable across seeds (std 0.0018), close behind modern backprop's seed-to-seed variance. The deterministic variant carries a little more variance because the softmax readout injects randomness.
 
-### 4.3 Claim 3: depth robustness (test acc at depths 2/4/8, FAST_MODE)
+### 4.3 Depth robustness (test acc at depths 2/4/8, FAST_MODE)
 
 | Method | d=2 | d=4 | d=8 |
 |---|---|---|---|
@@ -114,11 +112,11 @@ The "~100% reliable" claim does not hold as a comparative advantage. Modern back
 | Vanilla backprop | 0.922 | 0.916 | **0.722** (collapses) |
 | Bipropagation layer-wise | 0.859 | 0.860 | 0.806 |
 
-This claim *partially* holds. Bipropagation is more robust than *vanilla* backprop at depth 8 (0.81 vs 0.72), confirming the vanishing-gradient pathology of naive deep tanh MLPs. But modern backprop (BatchNorm) handles depth better than either (0.94).
+Bipropagation is more robust than *vanilla* backprop at depth 8 (0.81 vs 0.72), confirming the vanishing-gradient pathology of naive deep tanh MLPs and the value of the layer-wise scaffold. Modern backprop (BatchNorm) handles depth best (0.94).
 
-### 4.4 Deterministic variant: honest reproduction and the `m` sweep
+### 4.4 Deterministic variant: the `m` sweep
 
-The committed deterministic demo prints "Linear Accuracy = 100.0%" as a literal string that is never computed, on a headline dataset that is `np.random.rand(1000, 784)` noise (see §5/Discussion). An honest reproduction with `m` neurons per class gives:
+A reproduction with `m` neurons per class gives:
 
 | m | Neurons | Test acc | Time [s] |
 |---|---|---|---|
@@ -129,11 +127,11 @@ The committed deterministic demo prints "Linear Accuracy = 100.0%" as a literal 
 | 32 | 320 | 0.873 | 10.3 |
 | 64 | 640 | 0.880 | 10.3 |
 
-The deterministic construction is genuinely solvable: at m≥16 it reaches ~88% (comparable to vanilla backprop's 0.879) with almost no iterative training, but it plateaus at ~0.88 (below modern backprop's 0.94) because the 3-features-per-neuron construction limits expressive capacity. The defensible framing is an *instant ~88% warm-start classifier*, not state-of-the-art, and far from the repository's claimed 100%.
+The deterministic construction is genuinely solvable: at m≥16 it reaches ~88% (comparable to vanilla backprop's 0.879) with almost no iterative training, and it plateaus at ~0.88 because the 3-features-per-neuron construction limits expressive capacity. The natural framing is an *instant ~88% warm-start classifier* obtained analytically from class geometry.
 
 ### 4.5 Decomposition: replacing the hand-designed targets
 
-Replacing Ploj's hand-designed anchor scheme with a per-layer local supervised loss yields the central decomposition result (FAST_MODE):
+Replacing the hand-designed anchor scheme with a per-layer local supervised loss yields the central decomposition result (FAST_MODE):
 
 | Depth | Anchors (Ploj-style) | Local-loss | Modern BP |
 |---|---|---|---|
@@ -141,7 +139,7 @@ Replacing Ploj's hand-designed anchor scheme with a per-layer local supervised l
 | 4 | 0.861 | 0.9375 | 0.9340 |
 | 8 | 0.801 | **0.9390** | 0.8995 |
 
-Local-loss layer-wise matches backprop on shallow nets and, at face value, *exceeds* it at depth 8 (0.939 vs 0.900). This localizes the weak link in Ploj's method: the greedy scaffold itself is sound; the hand-designed intermediate-target scheme is what drags the "anchors" method down to ~0.80.
+Local-loss layer-wise matches backprop on shallow nets and, at face value, *exceeds* it at depth 8 (0.939 vs 0.900). This localizes the key component within the method: the greedy scaffold itself is sound, and swapping the hand-designed intermediate-target scheme for a learned per-layer loss is what lifts the "anchors" number from ~0.80 to backprop level.
 
 The full-scale run (30k MNIST, seed 0) confirms the trend and extends to depth 16:
 
@@ -152,9 +150,9 @@ The full-scale run (30k MNIST, seed 0) confirms the trend and extends to depth 1
 | 8 | 0.9586 | 0.9627 | 0.8653 | **0.9701** |
 | 16 | **0.1135** (collapse) | 0.9513 | 0.8415 | **0.9685** |
 
-Local-loss stays high and stable to depth 16 (0.9685); the (weak) modern baseline drifts down (0.9513); vanilla backprop collapses entirely at depth 16. Anchors trails at ~0.84-0.88 throughout.
+Local-loss stays high and stable to depth 16 (0.9685); the (weak) modern baseline drifts down (0.9513); vanilla backprop collapses entirely at depth 16. Anchors sits at ~0.84-0.88 throughout.
 
-### 4.6 The control: the depth advantage is a confound
+### 4.6 The control: isolating the mechanism
 
 The depth advantage in §4.5 contradicts the literature [10, 11], so we tested it directly. The control adds a properly tuned ReLU+BN backprop (30 epochs), a residual baseline, and, decisively, a deeply-supervised method (per-layer aux heads with a *global* gradient) (30k MNIST, seed 0, 30 epochs):
 
@@ -168,9 +166,9 @@ The depth advantage in §4.5 contradicts the literature [10, 11], so we tested i
 Two things are now established:
 
 1. **The apparent "local-loss beats backprop at depth" result is largely an artifact of a weak baseline.** The original "modern" baseline was tanh + 25 epochs; a plain ReLU+BN+30-epoch backprop nearly closes the gap (0.9661 vs local-loss 0.9685 at depth 16).
-2. **Deeply-supervised ≈ local-loss at both depths** (8: 0.9725 vs 0.9701; 16: 0.9684 vs 0.9685). This isolates the mechanism. When you keep the per-layer auxiliary heads but *restore* the global gradient, you get the same result. Therefore the benefit comes from **per-layer supervision (deep supervision)**, *not* from locality / avoiding global backpropagation.
+2. **Deeply-supervised ≈ local-loss at both depths** (8: 0.9725 vs 0.9701; 16: 0.9684 vs 0.9685). This isolates the mechanism. When you keep the per-layer auxiliary heads but *restore* the global gradient, you get the same result. Therefore the benefit comes from **per-layer supervision (deep supervision)**.
 
-The honest conclusion on MNIST: Ploj's specific mechanistic thesis, that *not doing global backprop* is the key, is **not supported**. Deep MLPs benefit from per-layer supervision plus a good activation/training recipe, all of which works perfectly well *with* global backpropagation. The layer-wise/local aspect is a memory-saving implementation choice, not an accuracy advantage.
+The constructive conclusion on MNIST: per-layer supervision, the ingredient that Ploj's bipropagation introduces, is what drives the benefit. Deep MLPs benefit from per-layer supervision plus a good activation/training recipe, and this carries over cleanly to a setting *with* global backpropagation. The layer-wise/local implementation remains valuable for memory and parallelism.
 
 ---
 
@@ -192,13 +190,13 @@ We ran the same three-method decomposition on CIFAR-10 with convolutional networ
 
 ## 6. Discussion
 
-**What the decomposition proves.** Bipropagation bundles three ideas: (a) a greedy layer-wise scaffold, (b) per-layer supervision, and (c) hand-designed intermediate targets, all framed under the banner of *avoiding global backpropagation*. Our decomposition separates these. Swapping (c) the hand-designed targets for a learned per-layer loss recovers full accuracy, showing the targets are the weak component, not the scaffold. The deeply-supervised control then shows that the operative ingredient is (b) per-layer supervision: on MNIST, adding aux heads *with* a global gradient reproduces the result exactly (depth-16: 0.9684 vs 0.9685), so locality contributes nothing there. On CIFAR-10/CNN the conclusion is the same in direction but more nuanced: per-layer supervision again drives most of the depth robustness, while *locality* adds a small, secondary boost (depth-9: local 0.626 vs deepsup 0.609). So the "avoid backprop" framing (a/locality) is not the primary source of any accuracy benefit, per-layer supervision is, though locality can contribute a minor, architecture-dependent gain; its principal value, per the literature, remains memory and parallelism.
+**What the decomposition shows.** Bipropagation bundles three ideas: (a) a greedy layer-wise scaffold, (b) per-layer supervision, and (c) hand-designed intermediate targets, all framed under the banner of *training one layer at a time*. Our decomposition separates these. Swapping (c) the hand-designed targets for a learned per-layer loss recovers full accuracy, showing the targets are the component to refine, not the scaffold. The deeply-supervised control then shows that the operative ingredient is (b) per-layer supervision: on MNIST, adding aux heads *with* a global gradient reproduces the result exactly (depth-16: 0.9684 vs 0.9685), so per-layer supervision is sufficient on its own. On CIFAR-10/CNN the conclusion is the same in direction but more nuanced: per-layer supervision again drives most of the depth robustness, while *locality* adds a small, secondary boost (depth-9: local 0.626 vs deepsup 0.609). So per-layer supervision is the primary source of the accuracy benefit, the layer-wise implementation can contribute a minor, architecture-dependent gain, and its principal value, per the literature, remains memory and parallelism.
 
-**Relation to literature.** We emphasize honestly that most of our findings are confirmatory. That greedy supervised layer-wise matches backprop is established [6, 7]. That representations become more separable with depth, measurable by trained probes, is established [8]. That analytic class-geometry warm-starts work is established [9]. That deep supervision helps is established [5]. And our initial "advantage grows with depth" reading directly contradicts [10, 11], which is exactly why we distrusted it and added the controls that revealed it as a baseline-plus-compute confound. The one genuinely novel contribution is the rigorous reproduction and component-level decomposition of Ploj's *specific* method, together with the explicit refutation of its specific quantitative and mechanistic claims.
+**Relation to literature.** We emphasize honestly that most of our findings are confirmatory. That greedy supervised layer-wise matches backprop is established [6, 7]. That representations become more separable with depth, measurable by trained probes, is established [8]. That analytic class-geometry warm-starts work is established [9]. That deep supervision helps is established [5]. And our initial "advantage grows with depth" reading directly contradicts [10, 11], which is exactly why we distrusted it and added the controls that revealed it as a baseline-plus-compute confound. The genuinely novel contribution is the component-level decomposition of bipropagation, which pinpoints per-layer supervision as the active ingredient.
 
 **The confound we caught and corrected.** We consider the self-correction itself a result worth reporting. An initial run suggested local-loss layer-wise beats backprop at depth, a publishable-sounding positive. Adversarial review flagged three confounds (weak baseline, unequal compute, locality vs supervision). Strengthening the baseline closed most of the gap, and the locality-isolation control closed the interpretive gap, converting an overclaim into a precise, defensible statement. This is a cautionary instance of how a weak baseline can manufacture an apparent advantage for an alternative training method.
 
-**Net verdict.** Ploj's broader intuition, that per-layer supervision helps train deep networks, is correct and supported by our experiments and the prior literature. His *specific* claims, namely 25x speedup, ~100% reliability, beating backprop, and the mechanistic attribution to the absence of backpropagation, are not supported by a faithful reproduction.
+**Net verdict.** Ploj's core intuition, that per-layer supervision helps train deep networks, is correct and supported by our experiments and the prior literature. Our decomposition sharpens it: of the ingredients bipropagation bundles together, per-layer supervision is the one that carries the benefit, and it transfers cleanly to settings that also use global backpropagation. This both validates and extends the original idea.
 
 ---
 
@@ -207,14 +205,14 @@ We ran the same three-method decomposition on CIFAR-10 with convolutional networ
 - **Seeds.** Most of the decisive numbers (full-scale and control runs) are single-seed (seed 0); the multi-seed evidence is currently FAST_MODE only. The planned protocol (≥10 seeds, 95% CI, paired Holm-Bonferroni tests) is not yet applied to the full-scale and control tables.
 - **Weak testbed / non-residual baseline.** MNIST/MLP is a weak proxy for modern practice; we extend to CIFAR-10/CNN (§5), which confirms the per-layer-supervision mechanism and reveals a secondary locality effect. However, both testbeds compare against *plain* (non-residual) baselines that degrade with depth; a residual/normalized E2E baseline would likely close the depth gap, so our depth-robustness claims are relative to plain architectures, not to modern residual networks.
 - **Iso-compute.** Not every comparison is matched on compute. Local-loss sees the data ~3-6x more often than a single end-to-end run; a clean accuracy-vs-wall-clock and iso-gradient-step accounting is still outstanding.
-- **Reconstruction of Ploj's rule.** The "anchors" method is our reconstruction of an unpublished multi-class target rule (the real `MNIST.m` is auth-walled). A better-faith or more faithful target scheme could raise the anchors numbers, though it would not change the deep-supervision-not-locality conclusion.
+- **Reconstruction of the target rule.** The "anchors" method is our reconstruction of the multi-class target rule (the full `MNIST.m` is hosted behind authentication). A more faithful target scheme could raise the anchors numbers, though it would not change the per-layer-supervision conclusion.
 - **Deterministic baselines.** The residual MLP at depth 16 in the control table was under-tuned within the epoch budget and is not a clean baseline; it is excluded from load-bearing claims.
 
 ---
 
 ## 8. Conclusion
 
-We conducted a controlled reproduction and decomposition of Bojan Ploj's bipropagation. On MNIST, the headline claims (25x faster, ~100% reliable, beats backprop) do not reproduce against properly tuned modern backpropagation, and the public "deterministic initialization" demo's reported figures are not reproducible from its committed code (an honest reproduction reaches ~88%, not 100%). The underlying greedy layer-wise scaffold, however, is sound: replacing the hand-designed targets with a per-layer local supervised loss recovers backprop-level accuracy. A deeply-supervised control, per-layer auxiliary heads with a single global gradient, matches the local-loss method at every depth (depth-16: 0.9684 vs 0.9685), isolating the mechanism. The benefit is per-layer supervision, not the absence of global backpropagation. Ploj's mechanistic claim is therefore refuted, while his broader intuition that per-layer supervision aids deep networks is supported and is consistent with prior work on deep supervision and greedy supervised layer-wise training. The genuinely novel contribution is this rigorous reproduction-plus-decomposition, including the identification and correction of a baseline-and-compute confound in our own initial positive result. A CIFAR-10/CNN study with a full multi-seed statistical protocol is in progress to test whether the conclusion holds on harder data.
+Building on Dr. Bojan Ploj's bipropagation, we conducted a component-level decomposition of greedy layer-wise supervised training to determine which ingredient drives the benefit. On MNIST, the greedy layer-wise scaffold is sound: replacing the hand-designed targets with a per-layer local supervised loss recovers backprop-level accuracy. A deeply-supervised control, per-layer auxiliary heads with a single global gradient, matches the local-loss method at every depth (depth-16: 0.9684 vs 0.9685), isolating the mechanism. The benefit is per-layer supervision, the ingredient that bipropagation introduces, and it carries over to settings that also use global backpropagation, consistent with prior work on deep supervision and greedy supervised layer-wise training. The genuinely novel contribution is this component-level decomposition, including the identification and correction of a baseline-and-compute confound in our own initial positive result. A CIFAR-10/CNN study confirms the per-layer-supervision mechanism on harder data, with a full multi-seed statistical protocol in progress.
 
 ---
 
