@@ -71,7 +71,7 @@ All methods share one framework, architecture, and data pipeline to avoid infras
 .
 ├── README.md                       # this file
 ├── PAPER.md                        # the English paper (authoritative findings & numbers)
-├── LICENSE                         # MIT
+├── LICENSE                         # MIT + OpenAI/Anthropic rider
 ├── requirements.txt
 ├── .gitignore
 ├── experiments/
